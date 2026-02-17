@@ -492,18 +492,18 @@ function normalizeBairro(b) {
 function shortName(p) {
   const emp = p.empreendimento || '';
   // Use specific building name if available
-  if (emp.includes('SEVEN')) return 'Seven Residence';
-  if (emp.includes('PARKSIDE')) return 'Parkside';
-  if (emp.includes('ACQUA')) return 'Acqua Ocean View';
-  if (emp.includes('BLANC')) return 'Residencial Blanc';
-  if (emp.includes('VISION')) return 'Residencial Vision';
-  if (emp.includes('HOTEL') && p.id === 8) return 'California Hotel';
-  if (emp.includes('TERMINAL') || emp.includes('LOGÍSTICO')) return 'Centro Logístico';
+  if (emp.includes('SEVEN')) return 'Seven Residence (Mapesul)';
+  if (emp.includes('PARKSIDE')) return 'Parkside (Parkside SPE)';
+  if (emp.includes('ACQUA')) return 'Acqua Ocean View (G10)';
+  if (emp.includes('BLANC')) return 'Residencial Blanc (Engeoffice)';
+  if (emp.includes('VISION')) return 'Residencial Vision (Engeoffice)';
+  if (emp.includes('HOTEL') && p.id === 8) return 'California Hotel (Casa Prime)';
+  if (emp.includes('TERMINAL') || emp.includes('LOGÍSTICO')) return 'Centro Logístico (HR Aluguel)';
   if (emp.includes('Transbordo')) return 'Est. Transbordo';
   if (p.requerente) {
     const r = p.requerente;
     if (r.includes('RÔGGA') || r.includes('ROGGA')) return 'Tropicale (Rôgga)';
-    if (r.includes('RT 49') || r.includes('RT49')) return 'RT 49';
+    if (r.includes('RT 49') || r.includes('RT49')) return 'RT 49 (RT 49 SPE)';
     if (r.includes('VETTER')) return 'Fort Myers (Vetter)';
     if (r.includes('1 SPE') || r.includes('1SPE')) return 'Halsten (1SPE)';
   }
