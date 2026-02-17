@@ -73,7 +73,7 @@ body {
   text-align: center;
   border: 1px solid var(--border);
 }
-.stat-card .number { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.stat-card .number { font-size: 1.8rem; font-weight: 700; color: var(--red); }
 .stat-card .label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
 
 /* Chart Section */
@@ -432,11 +432,11 @@ body {
     <div class="filter-sort">
       <select id="filterBairro"><option value="">Todos os bairros</option></select>
       <select id="sortBy">
+        <option value="data_protocolo">Ordenar: Requerimento</option>
         <option value="pavimentos">Ordenar: Pavimentos</option>
         <option value="area_construida_m2">Ordenar: Área Construída</option>
         <option value="unid_total">Ordenar: Total Unidades</option>
         <option value="vagas_estacionamento">Ordenar: Vagas</option>
-        <option value="id">Ordenar: Protocolo</option>
       </select>
     </div>
     <div class="cards-grid" id="cards-grid"></div>
@@ -489,25 +489,43 @@ function normalizeBairro(b) {
   return b;
 }
 
-function shortName(p) {
+function buildingName(p) {
   const emp = p.empreendimento || '';
-  // Use specific building name if available
-  if (emp.includes('SEVEN')) return 'Seven Residence (Mapesul)';
-  if (emp.includes('PARKSIDE')) return 'Parkside (Parkside SPE)';
-  if (emp.includes('ACQUA')) return 'Acqua Ocean View (G10)';
-  if (emp.includes('BLANC')) return 'Residencial Blanc (Engeoffice)';
-  if (emp.includes('VISION')) return 'Residencial Vision (Engeoffice)';
-  if (emp.includes('HOTEL') && p.id === 8) return 'California Hotel (Casa Prime)';
-  if (emp.includes('TERMINAL') || emp.includes('LOGÍSTICO')) return 'Centro Logístico (HR Aluguel)';
+  if (emp.includes('SEVEN')) return 'Seven Residence';
+  if (emp.includes('PARKSIDE')) return 'Parkside';
+  if (emp.includes('ACQUA')) return 'Acqua Ocean View';
+  if (emp.includes('BLANC')) return 'Residencial Blanc';
+  if (emp.includes('VISION')) return 'Residencial Vision';
+  if (emp.includes('HOTEL') && p.id === 8) return 'California Hotel';
+  if (emp.includes('TERMINAL') || emp.includes('LOGÍSTICO')) return 'Centro Logístico';
   if (emp.includes('Transbordo')) return 'Est. Transbordo';
   if (p.requerente) {
     const r = p.requerente;
-    if (r.includes('RÔGGA') || r.includes('ROGGA')) return 'Tropicale (Rôgga)';
-    if (r.includes('RT 49') || r.includes('RT49')) return 'RT 49 (RT 49 SPE)';
-    if (r.includes('VETTER')) return 'Fort Myers (Vetter)';
-    if (r.includes('1 SPE') || r.includes('1SPE')) return 'Halsten (1SPE)';
+    if (r.includes('RÔGGA') || r.includes('ROGGA')) return 'Tropicale';
+    if (r.includes('RT 49') || r.includes('RT49')) return 'RT 49';
+    if (r.includes('VETTER')) return 'Fort Myers';
+    if (r.includes('1 SPE') || r.includes('1SPE')) return 'Halsten';
   }
   return emp.substring(0, 25) || `Projeto ${p.id}`;
+}
+
+function shortName(p) {
+  const name = buildingName(p);
+  const emp = p.empreendimento || '';
+  const r = p.requerente || '';
+  // Add company in parentheses
+  if (emp.includes('SEVEN')) return name + ' (Mapesul)';
+  if (emp.includes('PARKSIDE')) return name + ' (Parkside SPE)';
+  if (emp.includes('ACQUA')) return name + ' (G10)';
+  if (emp.includes('BLANC')) return name + ' (Engeoffice)';
+  if (emp.includes('VISION')) return name + ' (Engeoffice)';
+  if (emp.includes('HOTEL') && p.id === 8) return name + ' (Casa Prime)';
+  if (emp.includes('TERMINAL') || emp.includes('LOGÍSTICO')) return name + ' (HR Aluguel)';
+  if (r.includes('RÔGGA') || r.includes('ROGGA')) return name + ' (Rôgga)';
+  if (r.includes('RT 49') || r.includes('RT49')) return name + ' (RT 49 SPE)';
+  if (r.includes('VETTER')) return name + ' (Vetter)';
+  if (r.includes('1 SPE') || r.includes('1SPE')) return name + ' (1SPE)';
+  return name;
 }
 
 function fmtNum(n) {
@@ -570,10 +588,12 @@ function fmtDateShort(s) {
 
 function renderSummary() {
   const building = DATA.filter(p => p.categoria !== 'certidao_uso_solo');
+  const withPav = building.filter(p => p.pavimentos > 0);
+  const avgPav = withPav.length ? Math.round(withPav.reduce((s, p) => s + p.pavimentos, 0) / withPav.length) : 0;
   const stats = [
     { number: DATA.length, label: 'Projetos Protocolados desde 2024' },
+    { number: avgPav, label: 'Núm. Médio de Pavimentos / Projeto' },
     { number: building.reduce((s, p) => s + (p.unid_habitacionais || 0), 0), label: 'Unid. Habitacionais' },
-    { number: building.reduce((s, p) => s + (p.area_construida_m2 || 0), 0), label: 'm² Construídos', fmt: v => fmtArea(v) },
     { number: building.reduce((s, p) => s + (p.vagas_estacionamento || 0), 0), label: 'Vagas Estacion.' },
   ];
   const el = document.getElementById('summary');
@@ -705,7 +725,11 @@ function renderCards() {
     projects = projects.filter(p => normalizeBairro(p.bairro) === bairroFilter);
   }
   projects.sort((a, b) => {
-    if (sortKey === 'id') return a.id - b.id;
+    if (sortKey === 'data_protocolo') {
+      const da = parseDate(a.data_protocolo) || new Date(9999, 0);
+      const db = parseDate(b.data_protocolo) || new Date(9999, 0);
+      return da - db;
+    }
     return (b[sortKey] || 0) - (a[sortKey] || 0);
   });
 
@@ -722,10 +746,11 @@ function renderCards() {
     return `
       <div class="project-card">
         <div class="card-header">
-          <div class="card-title">${shortName(p)}</div>
+          <div class="card-title">${buildingName(p)}${p.url_eiv ? ` <a href="${p.url_eiv}" target="_blank" title="Baixar EIV/RIV (PDF)" style="color:var(--accent);text-decoration:none;font-size:0.8rem;opacity:0.7">&#x2197;&#xFE0E;</a>` : ''}</div>
           ${tipoBadge(p.tipo)}
         </div>
-        <div class="card-company">${p.requerente || '—'}</div>
+        <div class="card-company" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.requerente || ''}">${(p.requerente || '—').replace('SOCIEDADE DE PROPÓSITO ESPECÍFICO ', '')}</div>
+        <div class="card-company" style="border-left:3px solid var(--accent);padding-left:8px">${p.endereco || ''}${p.bairro ? ` — ${normalizeBairro(p.bairro)}` : ''}</div>
         <div class="card-stats">
           ${p.pavimentos ? `<div class="card-stat"><strong>${p.pavimentos}</strong> pavimentos</div>` : ''}
           ${p.torres ? `<div class="card-stat"><strong>${p.torres}</strong> torre${p.torres > 1 ? 's' : ''}</div>` : ''}
@@ -736,11 +761,15 @@ function renderCards() {
           ${p.vagas_estacionamento ? `<div class="card-stat"><strong>${fmtNum(p.vagas_estacionamento)}</strong> vagas</div>` : ''}
           ${p.area_terreno_m2 ? `<div class="card-stat"><strong>${fmtArea(p.area_terreno_m2)}</strong> terreno</div>` : ''}
         </div>
+        <div class="card-dates" style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px;padding-top:8px;border-top:1px solid var(--border)">
+          ${p.data_protocolo ? `<div>Requerimento: ${fmtDate(p.data_protocolo)}</div>` : ''}
+          ${p.data_audiencia_publica ? `<div>Audiência Pública: ${fmtDate(p.data_audiencia_publica)}</div>` : ''}
+          ${p.data_reuniao ? `<div>Plenária: ${fmtDate(p.data_reuniao)}</div>` : ''}
+          ${p.data_assinatura ? `<div>Deliberação: ${fmtDate(p.data_assinatura)}</div>` : ''}
+        </div>
         <div class="card-tags">
-          <span class="tag tag-bairro">${normalizeBairro(p.bairro)}</span>
           ${statusTag}
           ${voteTag}
-          ${p.data_audiencia_publica ? `<span class="tag">Audiência: ${fmtDate(p.data_audiencia_publica)}</span>` : ''}
         </div>
       </div>
     `;
