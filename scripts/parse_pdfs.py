@@ -12,18 +12,22 @@ EMPREENDIMENTOS_DIR = os.path.join(BASE_DIR, "empreendimentos")
 OUT_PATH = os.path.join(BASE_DIR, "docs", "data.json")
 
 # Map project dirs to their key PDF files and metadata
+DOWNLOAD_BASE = "https://penha.atende.net/atende.php?rot=1&aca=571&ajax=t&processo=downloadFile&sistema=WPO&classe=UploadMidia&file="
+
 PROJECTS = [
     {
         "dir": "01-1DOC_1.340-2025_Mapesul",
         "parecer_tecnico": "Parecer_RIV_1DOC_1.340_2025_Mapesul_Emp_Imob_Ltda.pdf",
         "parecer_concidade": None,
         "protocolo": "1DOC 1.340/2025",
+        "eiv_hash": "E509707B040CDA5204850BE660FF0EA880F0B755",
     },
     {
         "dir": "02-1DOC_2.509-2025_Parkside_SPE",
         "parecer_tecnico": "Parecer_RIV_1DOC_2.509_2025_Parkside_SPE_Ltda.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_03-2025_Parkside_SPE.pdf",
         "protocolo": "1DOC 2.509/2025",
+        "eiv_hash": "9FADFA2C059B95EC4E9D634BFA7538A790497C76",
     },
     {
         "dir": "03-1DOC_4.673-2024_Anderson_Teixeira",
@@ -31,60 +35,70 @@ PROJECTS = [
         "parecer_concidade": "Parecer_Concidade_1DOC_4.673-2024_Anderson_F_C_Teixeira.pdf",
         "protocolo": "1DOC 4.673/2024",
         "categoria": "certidao_uso_solo",
+        "eiv_hash": "042523339751C84E4D75B343DE9A21BE14CC383D",
     },
     {
         "dir": "04-1DOC_7.684-2024_HR_Aluguel_Imoveis",
         "parecer_tecnico": "EIV_PENHA_1DOC_7.684-2024_HR_Aluguel_Imoveis_Proprios_Ltda.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_04-2025_HR_Aluguel_Imoveis.pdf",
         "protocolo": "1DOC 7.684/2024",
+        "eiv_hash": "4F1360F098B3C91C1BF91910AD16902EF6E099CC",
     },
     {
         "dir": "05-1DOC_9.235-2024_Empreendimento_1SPE",
         "parecer_tecnico": "EIV_Halsten_Penha_Rev_30_08_24_1DOC_9.235-2024_Empreendimento_1SPE.pdf",
         "parecer_concidade": None,
         "protocolo": "1DOC 9.235/2024",
+        "eiv_hash": "69E12611F0226CEACF3E82A0E1060763D5C05590",
     },
     {
         "dir": "06-1DOC_9.541-2024_G10_Empreendimentos",
         "parecer_tecnico": "EIV_Ocean_Acqua_View_Penha_GE10_1DOC_9.541-2024.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_05-2025_GE10_Empreendimento.pdf",
         "protocolo": "1DOC 9.541/2024",
+        "eiv_hash": "8DA2A31BB2FEC8C216C5A25A76D63DA135CE8B36",
     },
     {
         "dir": "07-1DOC_10.835-2024_Engeoffice",
         "parecer_tecnico": "EIV_BLANC_rev_01_1DOC_10.835.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_01-2025_Engeoffice_Construcao_Civil.pdf",
         "protocolo": "1DOC 10.835/2024",
+        "eiv_hash": "578E82ADC96E7C187420CD810DBA7FB67F4782D9",
     },
     {
         "dir": "08-1DOC_11.021-2024_Casa_Prime_Dreams",
         "parecer_tecnico": "EIV_California_1DOC_11.021-2024_Casa_Prime_Dreams_SPE.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_02-2025_Casa_Prime_Dreams_SPE.pdf",
         "protocolo": "1DOC 11.021/2024",
+        "eiv_hash": "BF6084FC1D64D2105FB08C038AB17B788F4E87F6",
     },
     {
         "dir": "09-1DOC_2.269-2025_Rogga_SA",
         "parecer_tecnico": "1DOC_2.269-2025_Rogga_SA_Const_Inc_23-07-2025.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_06-2025_Rogga_SA_Construtora_Incorporadora.pdf",
         "protocolo": "1DOC 2.269/2025",
+        "eiv_hash": "5BD8B8D75B848DFB4E5E8AB3AD301712F548EECE",
     },
     {
         "dir": "10-1DOC_5.539-2025_RT49_Emp_Imob",
         "parecer_tecnico": "1DOC_5.539-2025_RT_49_Emp_Imob_SPE_23-07-2025.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_08-2025_RT49_Empreendimento_Imobiliario_SPE.pdf",
         "protocolo": "1DOC 5.539/2025",
+        "eiv_hash": "28EB5A45E6497C99F21BD470B9244D0311D78B00",
     },
     {
         "dir": "11-1DOC_4.179-2025_Vetter_Emp_32",
         "parecer_tecnico": "EIV_Vetter_Emp32_Ltda_Parecer_Tec_extrato_DOM-SC.pdf",
         "parecer_concidade": "Parecer_CONCIDADE_07-2025_Vetter_Empreendimento_32.pdf",
         "protocolo": "1DOC 4.179/2025",
+        "eiv_hash": "952205F99FF7EE550848767A1D34D1C94F1AC37E",
     },
     {
         "dir": "12-1DOC_11.194-2024_Engeoffice_Ed_Vison",
         "parecer_tecnico": "EIV-RIV_Engeoffice_Ed_Vison.pdf",
         "parecer_concidade": None,
         "protocolo": "1DOC 11.194/2024",
+        "eiv_hash": "ECF5DB679F2792EEC0A4DD9EF2A78ADC0090AAF7",
     },
 ]
 
@@ -332,6 +346,7 @@ def main():
             "protocolo": proj["protocolo"],
             "diretorio": proj["dir"],
             "categoria": proj.get("categoria", "empreendimento_impacto"),
+            "url_eiv": DOWNLOAD_BASE + proj["eiv_hash"] if proj.get("eiv_hash") else None,
         }
 
         # Parse Parecer Técnico

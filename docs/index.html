@@ -251,26 +251,49 @@ body {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   padding: 20px;
-  overflow-x: auto;
+  position: relative;
 }
-.timeline-row {
-  display: flex;
-  align-items: center;
-  padding: 8px 0;
+.timeline-labels {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--card-bg);
+  float: left;
+  width: 170px;
+}
+.timeline-labels .timeline-label-row {
+  padding: 8px 8px 8px 0;
   border-bottom: 1px solid var(--border);
-  min-width: 600px;
-}
-.timeline-row:last-child { border-bottom: none; }
-.timeline-label {
-  width: 180px;
-  flex-shrink: 0;
   font-size: 0.78rem;
   font-weight: 500;
-  padding-right: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  height: 44px;
+  display: flex;
+  align-items: center;
 }
+.timeline-labels .timeline-label-row:last-child { border-bottom: none; }
+.timeline-labels .eiv-link:hover { color: var(--accent); }
+.timeline-tracks-wrapper {
+  margin-left: 170px;
+  overflow-x: auto;
+}
+.timeline-tracks {
+  min-width: 500px;
+  transition: min-width 0.3s ease;
+}
+.timeline-tracks.expanded {
+  min-width: 2400px;
+}
+.timeline-track-row {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+.timeline-track-row:last-child { border-bottom: none; }
 .timeline-track {
   flex: 1;
   position: relative;
@@ -283,8 +306,30 @@ body {
   height: 10px;
   border-radius: 50%;
   position: absolute;
-  cursor: default;
+  cursor: pointer;
+  z-index: 1;
+  transition: all 0.25s ease;
+  transform: translateX(-5px);
 }
+.timeline-dot .dot-label {
+  display: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  line-height: 1;
+}
+.timeline-dot.expanded {
+  height: 20px;
+  border-radius: 10px;
+  width: auto;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  z-index: 3;
+  transform: translateX(-5px) translateY(-5px);
+}
+.timeline-dot.expanded .dot-label { display: inline; }
 .timeline-dot.protocolo { background: #8b5cf6; }
 .timeline-dot.audiencia { background: var(--accent); }
 .timeline-dot.reuniao { background: var(--orange); }
@@ -367,7 +412,7 @@ body {
   <div class="timeline-section" id="sec-timeline">
     <div class="section-header"><div class="section-title">Linha do Tempo</div><div class="section-export"><button onclick="exportSection('sec-timeline')">PNG</button></div></div>
     <div class="timeline-legend">
-      <span class="legend-protocolo">Requerimento</span>
+      <span class="legend-protocolo">Protocolamento</span>
       <span class="legend-audiencia">Audiência Pública</span>
       <span class="legend-reuniao">Reunião CONCIDADE</span>
       <span class="legend-parecer">Parecer Assinado</span>
@@ -377,7 +422,7 @@ body {
 
   <!-- Skyline -->
   <div class="skyline-section" id="sec-skyline">
-    <div class="section-header"><div class="section-title">Pavimentos por Empreendimento ("Skyline")</div><div class="section-export"><button onclick="exportSection('sec-skyline')">PNG</button></div></div>
+    <div class="section-header"><div class="section-title">Pavimentos</div><div class="section-export"><button onclick="exportSection('sec-skyline')">PNG</button></div></div>
     <div class="skyline" id="skyline"></div>
   </div>
 
@@ -515,12 +560,18 @@ function fmtDate(s) {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function fmtDateShort(s) {
+  const d = parseDate(s);
+  if (!d) return '—';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
 // ----- Render Functions -----
 
 function renderSummary() {
   const building = DATA.filter(p => p.categoria !== 'certidao_uso_solo');
   const stats = [
-    { number: DATA.length, label: 'Projetos' },
+    { number: DATA.length, label: 'Projetos Protocolados desde 2024' },
     { number: building.reduce((s, p) => s + (p.unid_habitacionais || 0), 0), label: 'Unid. Habitacionais' },
     { number: building.reduce((s, p) => s + (p.area_construida_m2 || 0), 0), label: 'm² Construídos', fmt: v => fmtArea(v) },
     { number: building.reduce((s, p) => s + (p.vagas_estacionamento || 0), 0), label: 'Vagas Estacion.' },
@@ -711,7 +762,7 @@ function renderTimeline() {
     return;
   }
 
-  // Find date range
+  // Find date range — pad to nearest Jan 1 boundaries so year lines always show
   let allDates = [];
   projects.forEach(p => {
     [p.data_protocolo, p.data_audiencia_publica, p.data_reuniao, p.data_assinatura].forEach(d => {
@@ -720,8 +771,11 @@ function renderTimeline() {
     });
   });
 
-  const minDate = new Date(Math.min(...allDates));
-  const maxDate = new Date(Math.max(...allDates));
+  const dataMin = new Date(Math.min(...allDates));
+  const dataMax = new Date(Math.max(...allDates));
+  // Pad: start 1 month before earliest date, end at Feb 1 of year after latest
+  const minDate = new Date(dataMin.getFullYear(), dataMin.getMonth() - 1, 1);
+  const maxDate = new Date(dataMax.getFullYear() + 1, 1, 1);
   const range = maxDate - minDate || 1;
 
   function datePos(s) {
@@ -737,61 +791,78 @@ function renderTimeline() {
     return db - da;
   });
 
+  // Year markers
+  const yearMarkers = [];
+  for (let y = minDate.getFullYear(); y <= maxDate.getFullYear(); y++) {
+    const jan1 = new Date(y, 0, 1);
+    const pos = ((jan1 - minDate) / range) * 100;
+    if (pos >= 0 && pos <= 100) {
+      yearMarkers.push({ year: y, pos });
+    }
+  }
+
   const el = document.getElementById('timeline');
-  el.innerHTML = projects.map(p => {
+
+  // Build labels column (fixed) and tracks column (scrollable)
+  const labelsHtml = [];
+  const tracksHtml = [];
+
+  // Year header
+  labelsHtml.push(`<div class="timeline-label-row" style="border-bottom:none;height:22px"></div>`);
+  tracksHtml.push(`
+    <div class="timeline-track-row" style="border-bottom:none;height:22px">
+      <div class="timeline-track" style="height:18px">
+        ${yearMarkers.map(m => `<span style="position:absolute;left:${m.pos}%;transform:translateX(-50%);font-size:0.72rem;font-weight:700;color:#9ca3af">${m.year}</span>`).join('')}
+      </div>
+    </div>
+  `);
+
+  projects.forEach(p => {
     const proto = datePos(p.data_protocolo);
     const aud = datePos(p.data_audiencia_publica);
     const reu = datePos(p.data_reuniao);
     const par = datePos(p.data_assinatura);
 
     const dots = [];
-    if (proto !== null) dots.push(`<div class="timeline-dot protocolo" style="left:${proto}%" title="Requerimento: ${fmtDate(p.data_protocolo)}"></div>`);
-    if (aud !== null) dots.push(`<div class="timeline-dot audiencia" style="left:${aud}%" title="Audiência: ${fmtDate(p.data_audiencia_publica)}"></div>`);
-    if (reu !== null) dots.push(`<div class="timeline-dot reuniao" style="left:${reu}%" title="Reunião: ${fmtDate(p.data_reuniao)}"></div>`);
-    if (par !== null) dots.push(`<div class="timeline-dot parecer" style="left:${par}%" title="Parecer: ${fmtDate(p.data_assinatura)}"></div>`);
+    if (proto !== null) dots.push(`<div class="timeline-dot protocolo" style="left:${proto}%" title="Protocolamento: ${fmtDate(p.data_protocolo)}"><span class="dot-label">${fmtDateShort(p.data_protocolo)}</span></div>`);
+    if (aud !== null) dots.push(`<div class="timeline-dot audiencia" style="left:${aud}%" title="Audiência: ${fmtDate(p.data_audiencia_publica)}"><span class="dot-label">${fmtDateShort(p.data_audiencia_publica)}</span></div>`);
+    if (reu !== null) dots.push(`<div class="timeline-dot reuniao" style="left:${reu}%" title="Reunião: ${fmtDate(p.data_reuniao)}"><span class="dot-label">${fmtDateShort(p.data_reuniao)}</span></div>`);
+    if (par !== null) dots.push(`<div class="timeline-dot parecer" style="left:${par}%" title="Parecer: ${fmtDate(p.data_assinatura)}"><span class="dot-label">${fmtDateShort(p.data_assinatura)}</span></div>`);
 
-    // Line between first and last dot
     const positions = [proto, aud, reu, par].filter(x => x !== null);
     const lineStart = Math.min(...positions);
     const lineEnd = Math.max(...positions);
 
-    return `
-      <div class="timeline-row">
-        <div class="timeline-label" title="${shortName(p)}">${shortName(p)}</div>
+    const eivLink = p.url_eiv
+      ? `<a href="${p.url_eiv}" target="_blank" title="Baixar EIV/RIV (PDF)" style="margin-left:5px;color:var(--accent);text-decoration:none;font-size:0.72rem;vertical-align:middle;opacity:0.7" class="eiv-link">&#x2197;&#xFE0E;</a>`
+      : '';
+
+    labelsHtml.push(`<div class="timeline-label-row" title="${shortName(p)}">${shortName(p)}${eivLink}</div>`);
+    tracksHtml.push(`
+      <div class="timeline-track-row">
         <div class="timeline-track">
+          ${yearMarkers.map(m => `<div style="position:absolute;left:${m.pos}%;top:0;bottom:0;width:1px;background:#e5e7eb;z-index:0"></div>`).join('')}
           <div class="timeline-line" style="left:${lineStart}%;width:${lineEnd - lineStart}%"></div>
           ${dots.join('')}
         </div>
       </div>
-    `;
-  }).join('');
-
-  // Year markers — vertical lines + labels
-  const yearMarkers = [];
-  for (let y = minDate.getFullYear(); y <= maxDate.getFullYear() + 1; y++) {
-    const jan1 = new Date(y, 0, 1);
-    const pos = ((jan1 - minDate) / range) * 100;
-    if (pos > 0 && pos < 100) {
-      yearMarkers.push({ year: y, pos });
-    }
-  }
-
-  // Inject year lines into each timeline row
-  const rows = el.querySelectorAll('.timeline-track');
-  rows.forEach(track => {
-    yearMarkers.forEach(m => {
-      const line = document.createElement('div');
-      line.style.cssText = `position:absolute;left:${m.pos}%;top:0;bottom:0;width:1px;background:#d1d5db;z-index:0;`;
-      track.appendChild(line);
-    });
+    `);
   });
 
-  // Year labels at bottom
-  el.innerHTML += `
-    <div style="position:relative;height:20px;margin-left:180px;min-width:600px">
-      ${yearMarkers.map(m => `<span style="position:absolute;left:${m.pos}%;transform:translateX(-50%);font-size:0.75rem;font-weight:600;color:#9ca3af">${m.year}</span>`).join('')}
-    </div>
+  el.innerHTML = `
+    <div class="timeline-labels">${labelsHtml.join('')}</div>
+    <div class="timeline-tracks-wrapper"><div class="timeline-tracks">${tracksHtml.join('')}</div></div>
   `;
+
+  // Click/tap anywhere in tracks toggles all dots expanded/collapsed
+  const tracksEl = el.querySelector('.timeline-tracks');
+  el.querySelector('.timeline-tracks-wrapper').addEventListener('click', () => {
+    const dots = el.querySelectorAll('.timeline-dot');
+    const anyExpanded = el.querySelector('.timeline-dot.expanded');
+    const expanding = !anyExpanded;
+    dots.forEach(d => d.classList.toggle('expanded', expanding));
+    tracksEl.classList.toggle('expanded', expanding);
+  });
 }
 
 // ----- Export Section as PNG -----
