@@ -280,6 +280,7 @@ body {
   position: absolute;
   cursor: default;
 }
+.timeline-dot.protocolo { background: #8b5cf6; }
 .timeline-dot.audiencia { background: var(--accent); }
 .timeline-dot.reuniao { background: var(--orange); }
 .timeline-dot.parecer { background: var(--green); }
@@ -306,6 +307,7 @@ body {
   margin-right: 4px;
   vertical-align: middle;
 }
+.legend-protocolo::before { background: #8b5cf6; }
 .legend-audiencia::before { background: var(--accent); }
 .legend-reuniao::before { background: var(--orange); }
 .legend-parecer::before { background: var(--green); }
@@ -360,6 +362,18 @@ body {
   <!-- Summary -->
   <div class="summary" id="summary"></div>
 
+  <!-- Timeline -->
+  <div class="timeline-section">
+    <div class="section-title">Linha do Tempo</div>
+    <div class="timeline-legend">
+      <span class="legend-protocolo">Requerimento</span>
+      <span class="legend-audiencia">Audiência Pública</span>
+      <span class="legend-reuniao">Reunião CONCIDADE</span>
+      <span class="legend-parecer">Parecer Assinado</span>
+    </div>
+    <div class="timeline-container" id="timeline"></div>
+  </div>
+
   <!-- Chart -->
   <div class="chart-section">
     <div class="section-title">Gráfico Comparativo</div>
@@ -389,17 +403,6 @@ body {
       </select>
     </div>
     <div class="cards-grid" id="cards-grid"></div>
-  </div>
-
-  <!-- Timeline -->
-  <div class="timeline-section">
-    <div class="section-title">Linha do Tempo</div>
-    <div class="timeline-legend">
-      <span class="legend-audiencia">Audiência Pública</span>
-      <span class="legend-reuniao">Reunião CONCIDADE</span>
-      <span class="legend-parecer">Parecer Assinado</span>
-    </div>
-    <div class="timeline-container" id="timeline"></div>
   </div>
 
   <!-- Footer -->
@@ -495,7 +498,9 @@ const MONTHS = {
 
 function parseDate(s) {
   if (!s) return null;
-  const m = s.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/);
+  // "12 de setembro de 2024" or "30 NOVEMBRO 2024" (without "de")
+  let m = s.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);
+  if (!m) m = s.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/i);
   if (!m) return null;
   const month = MONTHS[m[2].toLowerCase()];
   if (month === undefined) return null;
@@ -686,7 +691,9 @@ function initFilters() {
 
 // ----- Timeline -----
 function renderTimeline() {
-  const projects = DATA.filter(p => p.data_audiencia_publica || p.data_reuniao || p.data_assinatura);
+  const projects = DATA.filter(p =>
+    p.data_protocolo || p.data_audiencia_publica || p.data_reuniao || p.data_assinatura
+  );
   if (!projects.length) {
     document.getElementById('timeline').innerHTML = '<p style="padding:16px;color:#888">Sem datas disponíveis.</p>';
     return;
@@ -695,7 +702,7 @@ function renderTimeline() {
   // Find date range
   let allDates = [];
   projects.forEach(p => {
-    [p.data_audiencia_publica, p.data_reuniao, p.data_assinatura].forEach(d => {
+    [p.data_protocolo, p.data_audiencia_publica, p.data_reuniao, p.data_assinatura].forEach(d => {
       const parsed = parseDate(d);
       if (parsed) allDates.push(parsed);
     });
@@ -711,19 +718,28 @@ function renderTimeline() {
     return ((d - minDate) / range) * 100;
   }
 
+  // Sort by protocol date (earliest first)
+  projects.sort((a, b) => {
+    const da = parseDate(a.data_protocolo) || parseDate(a.data_audiencia_publica) || new Date(9999, 0);
+    const db = parseDate(b.data_protocolo) || parseDate(b.data_audiencia_publica) || new Date(9999, 0);
+    return da - db;
+  });
+
   const el = document.getElementById('timeline');
   el.innerHTML = projects.map(p => {
+    const proto = datePos(p.data_protocolo);
     const aud = datePos(p.data_audiencia_publica);
     const reu = datePos(p.data_reuniao);
     const par = datePos(p.data_assinatura);
 
     const dots = [];
+    if (proto !== null) dots.push(`<div class="timeline-dot protocolo" style="left:${proto}%" title="Requerimento: ${fmtDate(p.data_protocolo)}"></div>`);
     if (aud !== null) dots.push(`<div class="timeline-dot audiencia" style="left:${aud}%" title="Audiência: ${fmtDate(p.data_audiencia_publica)}"></div>`);
     if (reu !== null) dots.push(`<div class="timeline-dot reuniao" style="left:${reu}%" title="Reunião: ${fmtDate(p.data_reuniao)}"></div>`);
     if (par !== null) dots.push(`<div class="timeline-dot parecer" style="left:${par}%" title="Parecer: ${fmtDate(p.data_assinatura)}"></div>`);
 
     // Line between first and last dot
-    const positions = [aud, reu, par].filter(x => x !== null);
+    const positions = [proto, aud, reu, par].filter(x => x !== null);
     const lineStart = Math.min(...positions);
     const lineEnd = Math.max(...positions);
 

@@ -136,6 +136,19 @@ def parse_parecer_tecnico(text):
 
     data = {}
 
+    # Data do protocolo/reprotocolo do RIV
+    data_proto = extract_first(
+        section,
+        r'DATA\s+DO\s+(?:RE)?PROTOCOLO\s+DO\s+RIV:\s*(.+?)(?:\n)',
+    )
+    # Handle dd/mm/yyyy format (project 12)
+    if data_proto and re.match(r'\d{2}/\d{2}/\d{4}', data_proto):
+        d, m, y = data_proto.split('/')
+        meses = ['', 'janeiro','fevereiro','março','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro']
+        data_proto = f"{int(d)} de {meses[int(m)]} de {y}"
+    data["data_protocolo"] = data_proto
+
     # Requerente
     data["requerente"] = extract_first(section, r'REQUERENTE:\s*(.+?)(?:\n|CNPJ)')
 
@@ -331,6 +344,7 @@ def main():
             # Project 03 — manual data for certidão uso solo
             if proj.get("categoria") == "certidao_uso_solo":
                 record.update({
+                    "data_protocolo": None,
                     "requerente": "Anderson Francisco Costa Teixeira",
                     "cnpj": None,
                     "empreendimento": "Estação de Transbordo de Esgotos Domésticos",
