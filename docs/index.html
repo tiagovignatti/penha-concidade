@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empreendimentos EIV/RIV — CONCIDADE Penha/SC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f5f5f5;
+  --card-bg: #fff;
+  --text: #1a1a2e;
+  --text-secondary: #555;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --border: #e5e7eb;
+  --green: #16a34a;
+  --orange: #ea580c;
+  --red: #dc2626;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+#main-content { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+
+/* Header */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 16px;
+}
+.header h1 { font-size: 1.5rem; color: var(--text); }
+.header .subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px; }
+.export-btns { display: flex; gap: 8px; }
+.export-btns button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.export-btns button:hover { background: var(--accent-light); }
+
+/* Summary Cards */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.stat-card .number { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.stat-card .label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+
+/* Chart Section */
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--accent);
+  display: inline-block;
+}
+.chart-section { margin-bottom: 40px; }
+.chart-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.chart-toggles button {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.chart-toggles button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.chart-container {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 16px;
+  position: relative;
+  height: 420px;
+}
+
+/* Skyline */
+.skyline-section { margin-bottom: 40px; }
+.skyline {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 24px 16px 16px;
+  min-height: 300px;
+  overflow-x: auto;
+}
+.skyline-bar {
+  flex: 1;
+  min-width: 50px;
+  max-width: 120px;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6px 2px;
+  cursor: default;
+  transition: opacity 0.2s;
+  position: relative;
+}
+.skyline-bar:hover { opacity: 0.85; }
+.skyline-bar .floors {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  writing-mode: horizontal-tb;
+  margin-bottom: 4px;
+}
+.skyline-bar .name {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* Project Cards */
+.cards-section { margin-bottom: 40px; }
+.filter-sort {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+.filter-sort select, .filter-sort input {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: var(--card-bg);
+}
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.project-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+  transition: box-shadow 0.2s;
+}
+.project-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.project-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.project-card .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-residencial { background: #dbeafe; color: #1d4ed8; }
+.badge-hotel { background: #fef3c7; color: #92400e; }
+.badge-logistico { background: #d1fae5; color: #065f46; }
+.badge-certidao { background: #fce7f3; color: #9d174d; }
+.card-company { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 8px; }
+.card-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.card-stat {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.card-stat strong { color: var(--text); }
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  background: #f3f4f6;
+  color: var(--text-secondary);
+}
+.tag-bairro { background: #ede9fe; color: #5b21b6; }
+.tag-approved { background: #d1fae5; color: var(--green); }
+.tag-pending { background: #fef3c7; color: var(--orange); }
+
+/* Timeline */
+.timeline-section { margin-bottom: 40px; }
+.timeline-container {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 20px;
+  overflow-x: auto;
+}
+.timeline-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  min-width: 600px;
+}
+.timeline-row:last-child { border-bottom: none; }
+.timeline-label {
+  width: 180px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding-right: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timeline-track {
+  flex: 1;
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+.timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  position: absolute;
+  cursor: default;
+}
+.timeline-dot.audiencia { background: var(--accent); }
+.timeline-dot.reuniao { background: var(--orange); }
+.timeline-dot.parecer { background: var(--green); }
+.timeline-line {
+  position: absolute;
+  height: 2px;
+  background: var(--border);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.timeline-legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.timeline-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.legend-audiencia::before { background: var(--accent); }
+.legend-reuniao::before { background: var(--orange); }
+.legend-parecer::before { background: var(--green); }
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 24px 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+}
+.footer a { color: var(--accent); text-decoration: none; }
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .header h1 { font-size: 1.2rem; }
+  .summary { grid-template-columns: repeat(2, 1fr); }
+  .cards-grid { grid-template-columns: 1fr; }
+  .chart-container { height: 350px; }
+}
+</style>
+</head>
+<body>
+
+<div id="main-content">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>Empreendimentos EIV/RIV — CONCIDADE Penha/SC</h1>
+      <div class="subtitle">Dados extraídos dos Relatórios de Impacto de Vizinhança publicados pelo Conselho Municipal da Cidade</div>
+    </div>
+    <div class="export-btns">
+      <button onclick="exportPNG()">PNG</button>
+      <button onclick="exportPDF()">PDF</button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary" id="summary"></div>
+
+  <!-- Chart -->
+  <div class="chart-section">
+    <div class="section-title">Gráfico Comparativo</div>
+    <div class="chart-toggles" id="chart-toggles"></div>
+    <div class="chart-container">
+      <canvas id="barChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Skyline -->
+  <div class="skyline-section">
+    <div class="section-title">Skyline — Pavimentos por Empreendimento</div>
+    <div class="skyline" id="skyline"></div>
+  </div>
+
+  <!-- Project Cards -->
+  <div class="cards-section">
+    <div class="section-title">Projetos</div>
+    <div class="filter-sort">
+      <select id="filterBairro"><option value="">Todos os bairros</option></select>
+      <select id="sortBy">
+        <option value="pavimentos">Ordenar: Pavimentos</option>
+        <option value="area_construida_m2">Ordenar: Área Construída</option>
+        <option value="unid_total">Ordenar: Total Unidades</option>
+        <option value="vagas_estacionamento">Ordenar: Vagas</option>
+        <option value="id">Ordenar: Protocolo</option>
+      </select>
+    </div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline-section">
+    <div class="section-title">Linha do Tempo</div>
+    <div class="timeline-legend">
+      <span class="legend-audiencia">Audiência Pública</span>
+      <span class="legend-reuniao">Reunião CONCIDADE</span>
+      <span class="legend-parecer">Parecer Assinado</span>
+    </div>
+    <div class="timeline-container" id="timeline"></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Fonte: <a href="https://penha.atende.net/subportal/conselho-municipal-concidade" target="_blank">Portal CONCIDADE — Prefeitura de Penha/SC</a>
+    &nbsp;|&nbsp; Gerado em <span id="gen-date"></span>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ----- Data -----
+let DATA = [];
+
+// Bairro color map
+const BAIRRO_COLORS = {
+  'Centro': '#2563eb',
+  'Praia de Armação do Itapocoroi': '#7c3aed',
+  'Praia de Armação do Itapocoroy': '#7c3aed',
+  'Praia de Armação': '#7c3aed',
+  'Praia Alegre / Centro': '#0891b2',
+  'São Cristovão': '#059669',
+  'Santa Lídia': '#d97706',
+  'Nossa Senhora de Fátima': '#dc2626',
+};
+
+function bairroColor(b) {
+  if (!b) return '#94a3b8';
+  // Normalize Armação variants
+  if (b.includes('Armação')) return '#7c3aed';
+  return BAIRRO_COLORS[b] || '#94a3b8';
+}
+
+function normalizeBairro(b) {
+  if (!b) return 'Sem bairro';
+  if (b.includes('Armação')) return 'Praia de Armação';
+  return b;
+}
+
+function shortName(p) {
+  const emp = p.empreendimento || '';
+  // Use specific building name if available
+  if (emp.includes('SEVEN')) return 'Seven Residence';
+  if (emp.includes('PARKSIDE')) return 'Parkside';
+  if (emp.includes('ACQUA')) return 'Acqua Ocean View';
+  if (emp.includes('BLANC')) return 'Residencial Blanc';
+  if (emp.includes('VISION')) return 'Residencial Vision';
+  if (emp.includes('HOTEL') && p.id === 8) return 'California Hotel';
+  if (emp.includes('TERMINAL') || emp.includes('LOGÍSTICO')) return 'Centro Logístico';
+  if (emp.includes('Transbordo')) return 'Est. Transbordo';
+  if (p.requerente) {
+    const r = p.requerente;
+    if (r.includes('RÔGGA') || r.includes('ROGGA')) return 'Tropicale (Rôgga)';
+    if (r.includes('RT 49') || r.includes('RT49')) return 'RT 49';
+    if (r.includes('VETTER')) return 'Fort Myers (Vetter)';
+    if (r.includes('1 SPE') || r.includes('1SPE')) return 'Halsten (1SPE)';
+  }
+  return emp.substring(0, 25) || `Projeto ${p.id}`;
+}
+
+function fmtNum(n) {
+  if (n == null) return '—';
+  return n.toLocaleString('pt-BR');
+}
+
+function fmtArea(n) {
+  if (n == null) return '—';
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' m²';
+}
+
+function totalUnits(p) {
+  return (p.unid_habitacionais || 0) + (p.unid_comerciais || 0) + (p.unid_hospedagem || 0);
+}
+
+function tipoBadge(tipo) {
+  const map = {
+    'residencial_multifamiliar': ['Residencial', 'badge-residencial'],
+    'hotel_comercial': ['Hotel/Comercial', 'badge-hotel'],
+    'logistico_comercial': ['Logístico', 'badge-logistico'],
+    'certidao_uso_solo': ['Certidão Uso Solo', 'badge-certidao'],
+    'comercial': ['Comercial', 'badge-hotel'],
+  };
+  const [label, cls] = map[tipo] || ['Outro', ''];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ----- Parse date string -----
+const MONTHS = {
+  'janeiro':0,'fevereiro':1,'março':2,'marco':2,'abril':3,'maio':4,'junho':5,
+  'julho':6,'agosto':7,'setembro':8,'outubro':9,'novembro':10,'dezembro':11
+};
+
+function parseDate(s) {
+  if (!s) return null;
+  const m = s.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/);
+  if (!m) return null;
+  const month = MONTHS[m[2].toLowerCase()];
+  if (month === undefined) return null;
+  return new Date(parseInt(m[3]), month, parseInt(m[1]));
+}
+
+function fmtDate(s) {
+  const d = parseDate(s);
+  if (!d) return '—';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// ----- Render Functions -----
+
+function renderSummary() {
+  const building = DATA.filter(p => p.categoria !== 'certidao_uso_solo');
+  const stats = [
+    { number: DATA.length, label: 'Projetos' },
+    { number: building.reduce((s, p) => s + (p.unid_habitacionais || 0), 0), label: 'Unid. Habitacionais' },
+    { number: building.reduce((s, p) => s + (p.area_construida_m2 || 0), 0), label: 'm² Construídos', fmt: v => fmtArea(v) },
+    { number: building.reduce((s, p) => s + (p.vagas_estacionamento || 0), 0), label: 'Vagas Estacion.' },
+  ];
+  const el = document.getElementById('summary');
+  el.innerHTML = stats.map(s => `
+    <div class="stat-card">
+      <div class="number">${s.fmt ? s.fmt(s.number) : fmtNum(s.number)}</div>
+      <div class="label">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+// ----- Chart -----
+let barChart = null;
+const CHART_MODES = [
+  { key: 'area_construida_m2', label: 'Área Construída (m²)' },
+  { key: 'pavimentos', label: 'Pavimentos' },
+  { key: 'unid_total', label: 'Total Unidades' },
+  { key: 'vagas_estacionamento', label: 'Vagas' },
+];
+let currentMode = 'area_construida_m2';
+
+function renderChartToggles() {
+  const el = document.getElementById('chart-toggles');
+  el.innerHTML = CHART_MODES.map(m =>
+    `<button data-mode="${m.key}" class="${m.key === currentMode ? 'active' : ''}" onclick="setChartMode('${m.key}')">${m.label}</button>`
+  ).join('');
+}
+
+function setChartMode(mode) {
+  currentMode = mode;
+  renderChartToggles();
+  updateChart();
+}
+
+function updateChart() {
+  const building = DATA.filter(p => p.categoria !== 'certidao_uso_solo')
+    .map(p => ({ ...p, unid_total: totalUnits(p) }))
+    .sort((a, b) => (b[currentMode] || 0) - (a[currentMode] || 0));
+
+  const labels = building.map(p => shortName(p));
+  const values = building.map(p => p[currentMode] || 0);
+  const colors = building.map(p => bairroColor(p.bairro));
+
+  if (barChart) barChart.destroy();
+
+  const modeLabel = CHART_MODES.find(m => m.key === currentMode)?.label || '';
+
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors.map(c => c + 'cc'),
+        borderColor: colors,
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${modeLabel}: ${fmtNum(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: '#f0f0f0' } },
+        y: { ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+// ----- Skyline -----
+function renderSkyline() {
+  const building = DATA.filter(p => p.pavimentos && p.pavimentos > 0)
+    .sort((a, b) => (a.pavimentos || 0) - (b.pavimentos || 0));
+  const maxPav = Math.max(...building.map(p => p.pavimentos));
+  const maxH = 240;
+
+  const el = document.getElementById('skyline');
+  el.innerHTML = building.map(p => {
+    const h = Math.max(30, (p.pavimentos / maxPav) * maxH);
+    const color = bairroColor(p.bairro);
+    const torres = p.torres || 1;
+    const torreLabel = torres > 1 ? ` (${torres}t)` : '';
+    return `
+      <div class="skyline-bar" style="height:${h}px; background:${color}cc;"
+           title="${shortName(p)}: ${p.pavimentos} pav${torreLabel}">
+        <span class="floors">${p.pavimentos}</span>
+        <span class="name" style="position:absolute;bottom:-30px;color:${color}">${shortName(p)}</span>
+      </div>
+    `;
+  }).join('');
+  // Add bottom margin for names
+  el.style.paddingBottom = '40px';
+}
+
+// ----- Project Cards -----
+function renderCards() {
+  const bairroFilter = document.getElementById('filterBairro').value;
+  const sortKey = document.getElementById('sortBy').value;
+
+  let projects = DATA.map(p => ({ ...p, unid_total: totalUnits(p) }));
+  if (bairroFilter) {
+    projects = projects.filter(p => normalizeBairro(p.bairro) === bairroFilter);
+  }
+  projects.sort((a, b) => {
+    if (sortKey === 'id') return a.id - b.id;
+    return (b[sortKey] || 0) - (a[sortKey] || 0);
+  });
+
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = projects.map(p => {
+    const hasApproval = p.parecer_num != null;
+    const statusTag = hasApproval
+      ? `<span class="tag tag-approved">Aprovado</span>`
+      : `<span class="tag tag-pending">Em análise</span>`;
+    const voteTag = p.resultado_voto
+      ? `<span class="tag">${p.resultado_voto}</span>`
+      : '';
+
+    return `
+      <div class="project-card">
+        <div class="card-header">
+          <div class="card-title">${shortName(p)}</div>
+          ${tipoBadge(p.tipo)}
+        </div>
+        <div class="card-company">${p.requerente || '—'}</div>
+        <div class="card-stats">
+          ${p.pavimentos ? `<div class="card-stat"><strong>${p.pavimentos}</strong> pavimentos</div>` : ''}
+          ${p.torres ? `<div class="card-stat"><strong>${p.torres}</strong> torre${p.torres > 1 ? 's' : ''}</div>` : ''}
+          ${p.area_construida_m2 ? `<div class="card-stat"><strong>${fmtArea(p.area_construida_m2)}</strong></div>` : ''}
+          ${p.unid_habitacionais ? `<div class="card-stat"><strong>${fmtNum(p.unid_habitacionais)}</strong> unid. hab.</div>` : ''}
+          ${p.unid_hospedagem ? `<div class="card-stat"><strong>${fmtNum(p.unid_hospedagem)}</strong> hospedagem</div>` : ''}
+          ${p.unid_comerciais ? `<div class="card-stat"><strong>${fmtNum(p.unid_comerciais)}</strong> comerciais</div>` : ''}
+          ${p.vagas_estacionamento ? `<div class="card-stat"><strong>${fmtNum(p.vagas_estacionamento)}</strong> vagas</div>` : ''}
+          ${p.area_terreno_m2 ? `<div class="card-stat"><strong>${fmtArea(p.area_terreno_m2)}</strong> terreno</div>` : ''}
+        </div>
+        <div class="card-tags">
+          <span class="tag tag-bairro">${normalizeBairro(p.bairro)}</span>
+          ${statusTag}
+          ${voteTag}
+          ${p.data_audiencia_publica ? `<span class="tag">Audiência: ${fmtDate(p.data_audiencia_publica)}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function initFilters() {
+  const bairros = [...new Set(DATA.map(p => normalizeBairro(p.bairro)))].sort();
+  const sel = document.getElementById('filterBairro');
+  bairros.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b;
+    opt.textContent = b;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', renderCards);
+  document.getElementById('sortBy').addEventListener('change', renderCards);
+}
+
+// ----- Timeline -----
+function renderTimeline() {
+  const projects = DATA.filter(p => p.data_audiencia_publica || p.data_reuniao || p.data_assinatura);
+  if (!projects.length) {
+    document.getElementById('timeline').innerHTML = '<p style="padding:16px;color:#888">Sem datas disponíveis.</p>';
+    return;
+  }
+
+  // Find date range
+  let allDates = [];
+  projects.forEach(p => {
+    [p.data_audiencia_publica, p.data_reuniao, p.data_assinatura].forEach(d => {
+      const parsed = parseDate(d);
+      if (parsed) allDates.push(parsed);
+    });
+  });
+
+  const minDate = new Date(Math.min(...allDates));
+  const maxDate = new Date(Math.max(...allDates));
+  const range = maxDate - minDate || 1;
+
+  function datePos(s) {
+    const d = parseDate(s);
+    if (!d) return null;
+    return ((d - minDate) / range) * 100;
+  }
+
+  const el = document.getElementById('timeline');
+  el.innerHTML = projects.map(p => {
+    const aud = datePos(p.data_audiencia_publica);
+    const reu = datePos(p.data_reuniao);
+    const par = datePos(p.data_assinatura);
+
+    const dots = [];
+    if (aud !== null) dots.push(`<div class="timeline-dot audiencia" style="left:${aud}%" title="Audiência: ${fmtDate(p.data_audiencia_publica)}"></div>`);
+    if (reu !== null) dots.push(`<div class="timeline-dot reuniao" style="left:${reu}%" title="Reunião: ${fmtDate(p.data_reuniao)}"></div>`);
+    if (par !== null) dots.push(`<div class="timeline-dot parecer" style="left:${par}%" title="Parecer: ${fmtDate(p.data_assinatura)}"></div>`);
+
+    // Line between first and last dot
+    const positions = [aud, reu, par].filter(x => x !== null);
+    const lineStart = Math.min(...positions);
+    const lineEnd = Math.max(...positions);
+
+    return `
+      <div class="timeline-row">
+        <div class="timeline-label" title="${shortName(p)}">${shortName(p)}</div>
+        <div class="timeline-track">
+          <div class="timeline-line" style="left:${lineStart}%;width:${lineEnd - lineStart}%"></div>
+          ${dots.join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ----- Export -----
+async function captureContent() {
+  return html2canvas(document.getElementById('main-content'), {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#f5f5f5',
+    logging: false,
+  });
+}
+
+async function exportPNG() {
+  const canvas = await captureContent();
+  const link = document.createElement('a');
+  link.download = 'concidade-penha-eiv-riv.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function exportPDF() {
+  const canvas = await captureContent();
+  const { jsPDF } = window.jspdf;
+  const imgW = 210; // A4 width mm
+  const imgH = (canvas.height * imgW) / canvas.width;
+  const pageH = 297; // A4 height mm
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  let y = 0;
+  const imgData = canvas.toDataURL('image/png');
+
+  while (y < imgH) {
+    if (y > 0) pdf.addPage();
+    pdf.addImage(imgData, 'PNG', 0, -y, imgW, imgH);
+    y += pageH;
+  }
+  pdf.save('concidade-penha-eiv-riv.pdf');
+}
+
+// ----- Init -----
+async function init() {
+  document.getElementById('gen-date').textContent = new Date().toLocaleDateString('pt-BR');
+
+  try {
+    const resp = await fetch('data.json');
+    DATA = await resp.json();
+  } catch (e) {
+    // Fallback: try inline
+    console.error('Failed to load data.json:', e);
+    document.getElementById('summary').innerHTML = '<p>Erro ao carregar dados. Certifique-se de que data.json existe no mesmo diretório.</p>';
+    return;
+  }
+
+  renderSummary();
+  renderChartToggles();
+  updateChart();
+  renderSkyline();
+  initFilters();
+  renderCards();
+  renderTimeline();
+}
+
+init();
+</script>
+</body>
+</html>
