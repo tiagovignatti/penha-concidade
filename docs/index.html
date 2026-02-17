@@ -6,7 +6,6 @@
 <title>PUBLICAÇÕES EIV/RIV - CONCIDADE Penha/SC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <style>
 :root {
   --bg: #f5f5f5;
@@ -41,18 +40,24 @@ body {
 }
 .header h1 { font-size: 1.5rem; color: var(--text); }
 .header .subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px; }
-.export-btns { display: flex; gap: 8px; }
-.export-btns button {
-  padding: 8px 16px;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.section-header .section-title { margin-bottom: 0; }
+.section-export button {
+  padding: 4px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 5px;
   background: var(--card-bg);
   cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
   transition: background 0.2s;
 }
-.export-btns button:hover { background: var(--accent-light); }
+.section-export button:hover { background: var(--accent-light); color: var(--accent); }
 
 /* Summary Cards */
 .summary {
@@ -353,18 +358,14 @@ body {
       <h1>PUBLICAÇÕES EIV/RIV - CONCIDADE Penha/SC</h1>
       <div class="subtitle">Dados extraídos dos Relatórios de Impacto de Vizinhança publicados pelo Conselho Municipal da Cidade</div>
     </div>
-    <div class="export-btns">
-      <button onclick="exportPNG()">PNG</button>
-      <button onclick="exportPDF()">PDF</button>
-    </div>
   </div>
 
   <!-- Summary -->
   <div class="summary" id="summary"></div>
 
   <!-- Timeline -->
-  <div class="timeline-section">
-    <div class="section-title">Linha do Tempo</div>
+  <div class="timeline-section" id="sec-timeline">
+    <div class="section-header"><div class="section-title">Linha do Tempo</div><div class="section-export"><button onclick="exportSection('sec-timeline')">PNG</button></div></div>
     <div class="timeline-legend">
       <span class="legend-protocolo">Requerimento</span>
       <span class="legend-audiencia">Audiência Pública</span>
@@ -374,24 +375,15 @@ body {
     <div class="timeline-container" id="timeline"></div>
   </div>
 
-  <!-- Chart -->
-  <div class="chart-section">
-    <div class="section-title">Gráfico Comparativo</div>
-    <div class="chart-toggles" id="chart-toggles"></div>
-    <div class="chart-container">
-      <canvas id="barChart"></canvas>
-    </div>
-  </div>
-
   <!-- Skyline -->
-  <div class="skyline-section">
-    <div class="section-title">Skyline — Pavimentos por Empreendimento</div>
+  <div class="skyline-section" id="sec-skyline">
+    <div class="section-header"><div class="section-title">Pavimentos por Empreendimento ("Skyline")</div><div class="section-export"><button onclick="exportSection('sec-skyline')">PNG</button></div></div>
     <div class="skyline" id="skyline"></div>
   </div>
 
   <!-- Project Cards -->
-  <div class="cards-section">
-    <div class="section-title">Projetos</div>
+  <div class="cards-section" id="sec-cards">
+    <div class="section-header"><div class="section-title">Projetos</div><div class="section-export"><button onclick="exportSection('sec-cards')">PNG</button></div></div>
     <div class="filter-sort">
       <select id="filterBairro"><option value="">Todos os bairros</option></select>
       <select id="sortBy">
@@ -403,6 +395,15 @@ body {
       </select>
     </div>
     <div class="cards-grid" id="cards-grid"></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-section" id="sec-chart">
+    <div class="section-header"><div class="section-title">Gráfico Comparativo</div><div class="section-export"><button onclick="exportSection('sec-chart')">PNG</button></div></div>
+    <div class="chart-toggles" id="chart-toggles"></div>
+    <div class="chart-container">
+      <canvas id="barChart"></canvas>
+    </div>
   </div>
 
   <!-- Footer -->
@@ -556,8 +557,7 @@ function setChartMode(mode) {
 }
 
 function updateChart() {
-  const building = DATA.filter(p => p.categoria !== 'certidao_uso_solo')
-    .map(p => ({ ...p, unid_total: totalUnits(p) }))
+  const building = DATA.map(p => ({ ...p, unid_total: totalUnits(p) }))
     .sort((a, b) => (b[currentMode] || 0) - (a[currentMode] || 0));
 
   const labels = building.map(p => shortName(p));
@@ -601,21 +601,32 @@ function updateChart() {
 
 // ----- Skyline -----
 function renderSkyline() {
-  const building = DATA.filter(p => p.pavimentos && p.pavimentos > 0)
-    .sort((a, b) => (a.pavimentos || 0) - (b.pavimentos || 0));
-  const maxPav = Math.max(...building.map(p => p.pavimentos));
+  const all = [...DATA].sort((a, b) => (a.pavimentos || 0) - (b.pavimentos || 0));
+  const maxPav = Math.max(...all.map(p => p.pavimentos || 0));
   const maxH = 240;
 
   const el = document.getElementById('skyline');
-  el.innerHTML = building.map(p => {
-    const h = Math.max(30, (p.pavimentos / maxPav) * maxH);
+  el.innerHTML = all.map(p => {
+    const pav = p.pavimentos || 0;
     const color = bairroColor(p.bairro);
     const torres = p.torres || 1;
     const torreLabel = torres > 1 ? ` (${torres}t)` : '';
+
+    if (pav === 0) {
+      return `
+        <div class="skyline-bar" style="height:30px; background:#e5e7eb; border:1px dashed #d1d5db;"
+             title="${shortName(p)}: sem dados de pavimentos">
+          <span class="floors" style="color:#9ca3af">—</span>
+          <span class="name" style="position:absolute;bottom:-30px;color:#9ca3af">${shortName(p)}</span>
+        </div>
+      `;
+    }
+
+    const h = Math.max(30, (pav / maxPav) * maxH);
     return `
       <div class="skyline-bar" style="height:${h}px; background:${color}cc;"
-           title="${shortName(p)}: ${p.pavimentos} pav${torreLabel}">
-        <span class="floors">${p.pavimentos}</span>
+           title="${shortName(p)}: ${pav} pav${torreLabel}">
+        <span class="floors">${pav}</span>
         <span class="name" style="position:absolute;bottom:-30px;color:${color}">${shortName(p)}</span>
       </div>
     `;
@@ -718,11 +729,11 @@ function renderTimeline() {
     return ((d - minDate) / range) * 100;
   }
 
-  // Sort by protocol date (earliest first)
+  // Sort by protocol date (latest first)
   projects.sort((a, b) => {
-    const da = parseDate(a.data_protocolo) || parseDate(a.data_audiencia_publica) || new Date(9999, 0);
-    const db = parseDate(b.data_protocolo) || parseDate(b.data_audiencia_publica) || new Date(9999, 0);
-    return da - db;
+    const da = parseDate(a.data_protocolo) || parseDate(a.data_audiencia_publica) || new Date(0);
+    const db = parseDate(b.data_protocolo) || parseDate(b.data_audiencia_publica) || new Date(0);
+    return db - da;
   });
 
   const el = document.getElementById('timeline');
@@ -753,43 +764,64 @@ function renderTimeline() {
       </div>
     `;
   }).join('');
+
+  // Year markers — vertical lines + labels
+  const yearMarkers = [];
+  for (let y = minDate.getFullYear(); y <= maxDate.getFullYear() + 1; y++) {
+    const jan1 = new Date(y, 0, 1);
+    const pos = ((jan1 - minDate) / range) * 100;
+    if (pos > 0 && pos < 100) {
+      yearMarkers.push({ year: y, pos });
+    }
+  }
+
+  // Inject year lines into each timeline row
+  const rows = el.querySelectorAll('.timeline-track');
+  rows.forEach(track => {
+    yearMarkers.forEach(m => {
+      const line = document.createElement('div');
+      line.style.cssText = `position:absolute;left:${m.pos}%;top:0;bottom:0;width:1px;background:#d1d5db;z-index:0;`;
+      track.appendChild(line);
+    });
+  });
+
+  // Year labels at bottom
+  el.innerHTML += `
+    <div style="position:relative;height:20px;margin-left:180px;min-width:600px">
+      ${yearMarkers.map(m => `<span style="position:absolute;left:${m.pos}%;transform:translateX(-50%);font-size:0.75rem;font-weight:600;color:#9ca3af">${m.year}</span>`).join('')}
+    </div>
+  `;
 }
 
-// ----- Export -----
-async function captureContent() {
-  return html2canvas(document.getElementById('main-content'), {
+// ----- Export Section as PNG -----
+async function exportSection(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+
+  // Hide export button during capture
+  const exportBtn = section.querySelector('.section-export');
+  if (exportBtn) exportBtn.style.display = 'none';
+
+  // Temporarily add attribution footer
+  const footer = document.createElement('div');
+  footer.style.cssText = 'text-align:center;padding:12px 0 4px;font-size:0.72rem;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:12px;';
+  footer.textContent = `Fonte: Portal CONCIDADE — Prefeitura de Penha/SC | Gerado em ${new Date().toLocaleDateString('pt-BR')}`;
+  section.appendChild(footer);
+
+  const canvas = await html2canvas(section, {
     scale: 2,
     useCORS: true,
     backgroundColor: '#f5f5f5',
     logging: false,
   });
-}
 
-async function exportPNG() {
-  const canvas = await captureContent();
+  section.removeChild(footer);
+  if (exportBtn) exportBtn.style.display = '';
+
   const link = document.createElement('a');
-  link.download = 'concidade-penha-eiv-riv.png';
+  link.download = sectionId + '.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
-}
-
-async function exportPDF() {
-  const canvas = await captureContent();
-  const { jsPDF } = window.jspdf;
-  const imgW = 210; // A4 width mm
-  const imgH = (canvas.height * imgW) / canvas.width;
-  const pageH = 297; // A4 height mm
-
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  let y = 0;
-  const imgData = canvas.toDataURL('image/png');
-
-  while (y < imgH) {
-    if (y > 0) pdf.addPage();
-    pdf.addImage(imgData, 'PNG', 0, -y, imgW, imgH);
-    y += pageH;
-  }
-  pdf.save('concidade-penha-eiv-riv.pdf');
 }
 
 // ----- Init -----
