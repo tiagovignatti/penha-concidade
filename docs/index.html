@@ -412,10 +412,10 @@ body {
   <div class="timeline-section" id="sec-timeline">
     <div class="section-header"><div class="section-title">Linha do Tempo</div><div class="section-export"><button onclick="exportSection('sec-timeline')">PNG</button></div></div>
     <div class="timeline-legend">
-      <span class="legend-protocolo">Protocolamento</span>
+      <span class="legend-protocolo">Requerimento</span>
       <span class="legend-audiencia">Audiência Pública</span>
-      <span class="legend-reuniao">Reunião CONCIDADE</span>
-      <span class="legend-parecer">Parecer Assinado</span>
+      <span class="legend-reuniao">Plenária</span>
+      <span class="legend-parecer">Deliberação</span>
     </div>
     <div class="timeline-container" id="timeline"></div>
   </div>
@@ -652,6 +652,15 @@ function updateChart() {
 }
 
 // ----- Skyline -----
+function skylineColor(pav, maxPav) {
+  // Orange (#ea580c) → dark (#1a1a1a) gradient based on floor count
+  const t = maxPav > 0 ? pav / maxPav : 0;
+  const r = Math.round(234 - t * 208);  // 234 → 26
+  const g = Math.round(88 - t * 62);    // 88 → 26
+  const b = Math.round(12 - t * -14);   // 12 → 26
+  return `rgb(${r},${g},${b})`;
+}
+
 function renderSkyline() {
   const all = [...DATA].sort((a, b) => (a.pavimentos || 0) - (b.pavimentos || 0));
   const maxPav = Math.max(...all.map(p => p.pavimentos || 0));
@@ -660,7 +669,6 @@ function renderSkyline() {
   const el = document.getElementById('skyline');
   el.innerHTML = all.map(p => {
     const pav = p.pavimentos || 0;
-    const color = bairroColor(p.bairro);
     const torres = p.torres || 1;
     const torreLabel = torres > 1 ? ` (${torres}t)` : '';
 
@@ -674,16 +682,16 @@ function renderSkyline() {
       `;
     }
 
+    const color = skylineColor(pav, maxPav);
     const h = Math.max(30, (pav / maxPav) * maxH);
     return `
-      <div class="skyline-bar" style="height:${h}px; background:${color}cc;"
+      <div class="skyline-bar" style="height:${h}px; background:${color};"
            title="${shortName(p)}: ${pav} pav${torreLabel}">
         <span class="floors">${pav}</span>
         <span class="name" style="position:absolute;bottom:-30px;color:${color}">${shortName(p)}</span>
       </div>
     `;
   }).join('');
-  // Add bottom margin for names
   el.style.paddingBottom = '40px';
 }
 
@@ -824,10 +832,10 @@ function renderTimeline() {
     const par = datePos(p.data_assinatura);
 
     const dots = [];
-    if (proto !== null) dots.push(`<div class="timeline-dot protocolo" style="left:${proto}%" title="Protocolamento: ${fmtDate(p.data_protocolo)}"><span class="dot-label">${fmtDateShort(p.data_protocolo)}</span></div>`);
+    if (proto !== null) dots.push(`<div class="timeline-dot protocolo" style="left:${proto}%" title="Requerimento: ${fmtDate(p.data_protocolo)}"><span class="dot-label">${fmtDateShort(p.data_protocolo)}</span></div>`);
     if (aud !== null) dots.push(`<div class="timeline-dot audiencia" style="left:${aud}%" title="Audiência: ${fmtDate(p.data_audiencia_publica)}"><span class="dot-label">${fmtDateShort(p.data_audiencia_publica)}</span></div>`);
-    if (reu !== null) dots.push(`<div class="timeline-dot reuniao" style="left:${reu}%" title="Reunião: ${fmtDate(p.data_reuniao)}"><span class="dot-label">${fmtDateShort(p.data_reuniao)}</span></div>`);
-    if (par !== null) dots.push(`<div class="timeline-dot parecer" style="left:${par}%" title="Parecer: ${fmtDate(p.data_assinatura)}"><span class="dot-label">${fmtDateShort(p.data_assinatura)}</span></div>`);
+    if (reu !== null) dots.push(`<div class="timeline-dot reuniao" style="left:${reu}%" title="Plenária: ${fmtDate(p.data_reuniao)}"><span class="dot-label">${fmtDateShort(p.data_reuniao)}</span></div>`);
+    if (par !== null) dots.push(`<div class="timeline-dot parecer" style="left:${par}%" title="Deliberação: ${fmtDate(p.data_assinatura)}"><span class="dot-label">${fmtDateShort(p.data_assinatura)}</span></div>`);
 
     const positions = [proto, aud, reu, par].filter(x => x !== null);
     const lineStart = Math.min(...positions);
