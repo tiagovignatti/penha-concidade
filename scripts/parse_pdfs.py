@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EMPREENDIMENTOS_DIR = os.path.join(BASE_DIR, "empreendimentos")
 OUT_PATH = os.path.join(BASE_DIR, "docs", "data.json")
 
 # Map project dirs to their key PDF files and metadata
@@ -312,7 +313,7 @@ def main():
 
     for i, proj in enumerate(PROJECTS, 1):
         print(f"[{i:02d}] Processing {proj['dir']}...")
-        proj_dir = os.path.join(BASE_DIR, proj["dir"])
+        proj_dir = os.path.join(EMPREENDIMENTOS_DIR, proj["dir"])
         record = {
             "id": i,
             "protocolo": proj["protocolo"],

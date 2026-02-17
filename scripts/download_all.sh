@@ -9,7 +9,7 @@
 # Usage: bash download_all.sh [DEST_DIR]
 
 BASE_URL="https://penha.atende.net/atende.php?rot=1&aca=571&ajax=t&processo=downloadFile&sistema=WPO&classe=UploadMidia"
-DEST="${1:-$(dirname "$0")/..}"
+DEST="${1:-$(dirname "$0")/../empreendimentos}"
 
 download_file() {
   local dir="$1"
