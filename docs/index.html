@@ -500,8 +500,9 @@ const MONTHS = {
 function parseDate(s) {
   if (!s) return null;
   // "12 de setembro de 2024" or "30 NOVEMBRO 2024" (without "de")
-  let m = s.match(/(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})/i);
-  if (!m) m = s.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+  // Use [^\s\d]+ instead of \w+ to match accented chars (Ç in MARÇO, etc.)
+  let m = s.match(/(\d{1,2})\s+de\s+([^\s\d]+)\s+de\s+(\d{4})/i);
+  if (!m) m = s.match(/(\d{1,2})\s+([^\s\d]+)\s+(\d{4})/i);
   if (!m) return null;
   const month = MONTHS[m[2].toLowerCase()];
   if (month === undefined) return null;
