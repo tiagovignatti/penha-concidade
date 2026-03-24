@@ -19,8 +19,8 @@ python3 -m http.server 8000 -d docs/
 
 ```
 empreendimentos/       # 12 projetos com PDFs originais (EIV/RIV + Pareceres)
-convocacoes_atas/      # 97 arquivos do portal (convocações + atas)
-  convocacoes/         #   64 editais de convocação (2023–2026)
+convocacoes_atas/      # 100 arquivos do portal (convocações + atas)
+  convocacoes/         #   67 editais de convocação (2023–2026)
   atas/                #   33 atas de reuniões e audiências (2020–2025)
 scripts/               # parse_pdfs.py, download_all.sh, download_convocacoes_atas.sh
 docs/                  # index.html + data.json (GitHub Pages)

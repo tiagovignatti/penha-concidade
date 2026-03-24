@@ -34,6 +34,33 @@ download_file() {
   fi
 }
 
+# Download from a direct URL (e.g. DOM/SC) instead of the portal hash
+download_url() {
+  local dir="$1"
+  local url="$2"
+  local name="$3"
+  local ext="$4"
+
+  mkdir -p "$DEST/$dir"
+  local filepath="$DEST/$dir/$name.$ext"
+
+  if [ -f "$filepath" ]; then
+    echo "  SKIP (exists): $name.$ext"
+    return
+  fi
+
+  echo "  Downloading: $name.$ext"
+  curl -s -L -o "$filepath" "$url"
+
+  if [ $? -eq 0 ] && [ -s "$filepath" ]; then
+    local size=$(du -h "$filepath" | cut -f1)
+    echo "    OK ($size)"
+  else
+    echo "    FAILED"
+    rm -f "$filepath"
+  fi
+}
+
 # ============================================================
 # CONVOCAÇÕES
 # ============================================================
@@ -117,6 +144,10 @@ download_file "$DIR" "9D20DBC61C97E971D8187EFC3EB87678E14572AC" "Edital_01-2026_
 download_file "$DIR" "92F3C6EFE4E809B6DB7EF018903EB3068796442E" "Edital_02-2026_1a_Audiencia_Publica_Engeoffice" "pdf"
 download_file "$DIR" "F4C48C7A9E2B348DD548384185B2E2155E2588B9" "Edital_03-2026_1a_Pre_Conferencia_02-02-2026" "pdf"
 download_file "$DIR" "C799281A9AB1E20D595E1DE0ABA9C332445CD9F2" "Edital_04-2026_1a_Conferencia_05-03-2026" "pdf"
+# Source: DOM/SC (diariomunicipal.sc.gov.br) — not yet available via portal hash
+download_url "$DIR" "https://diariomunicipal.sc.gov.br/arquivosbd/atos/2026/02/1770384027_termo_cancelamento_n._012026__editais_n._03_e_0420261_pr_e_conferncia.pdf" "Termo_Cancelamento_01-2026_Editais_03_e_04" "pdf"
+download_url "$DIR" "https://diariomunicipal.sc.gov.br/arquivosbd/atos/2026/03/1773756960_edital_n._052026__convocao_2_reunio_ordinria__24maro2026.pdf" "Edital_05-2026_Convocacao_2a_Reuniao_Ordinaria_24mar2026" "pdf"
+download_url "$DIR" "https://diariomunicipal.sc.gov.br/arquivosbd/atos/2026/03/1773948495_errata_ao_edital_n._052026__convocao_2_reunio_ordinria__24maro2026.pdf" "Errata_Edital_05-2026_Convocacao_2a_Reuniao_Ordinaria_24mar2026" "pdf"
 
 # ============================================================
 # ATAS
