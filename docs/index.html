@@ -914,15 +914,21 @@ async function exportSection(sectionId) {
   // Temporarily add attribution footer
   const footer = document.createElement('div');
   footer.style.cssText = 'text-align:center;padding:12px 0 4px;font-size:0.72rem;color:#9ca3af;border-top:1px solid #e5e7eb;margin-top:12px;';
-  footer.textContent = `Fonte: Portal CONCIDADE — Prefeitura de Penha/SC | Gerado em ${new Date().toLocaleDateString('pt-BR')}`;
+  footer.textContent = `Fonte: Portal CONCIDADE — Prefeitura de Penha/SC | Gerado em ${new Date().toLocaleDateString('pt-BR')} | https://tiagovignatti.github.io/penha-concidade/`;
   section.appendChild(footer);
 
+  // Add margins (0.2cm ≈ 7.6px at 96dpi) around the captured area
+  const margin = 7.6;
+  section.style.padding = margin + 'px';
+
   const canvas = await html2canvas(section, {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     backgroundColor: '#f5f5f5',
     logging: false,
   });
+
+  section.style.padding = '';
 
   section.removeChild(footer);
   if (exportBtn) exportBtn.style.display = '';
